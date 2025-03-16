@@ -2,7 +2,7 @@ use std::{
     fmt::{self, Write},
     fs,
     path::PathBuf,
-    process::Command,
+    process::{Command, Stdio},
     sync::mpsc,
     time::Duration,
 };
@@ -25,7 +25,7 @@ static PLUGIN_SOURCE: &str = include_str!("../../plugin.lua");
 #[derive(Debug, Parser)]
 pub struct DefaultsPlaceSubcommand {
     /// The path of an API dump that came from the dump command.
-    #[clap(long = "api_dump")]
+    #[clap(long)]
     pub api_dump: PathBuf,
     /// Where to output the place. The extension must be .rbxlx
     pub output: PathBuf,
@@ -63,6 +63,8 @@ fn save_place_in_studio(path: &PathBuf) -> anyhow::Result<StudioInfo> {
     log::info!("Starting Roblox Studio...");
 
     let mut studio_process = Command::new(studio_install.application_path())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .arg(path)
         .spawn()?;
 
@@ -85,7 +87,24 @@ fn save_place_in_studio(path: &PathBuf) -> anyhow::Result<StudioInfo> {
         }
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
+    {
+        let process_id = studio_process.id();
+        let script = format!(
+            r#"
+tell application "System Events"
+    set frontmost of the first process whose unix id is {process_id} to true
+    keystroke "s" using command down
+end tell
+"#
+        );
+
+        Command::new("osascript")
+            .args(["-e", script.as_str()])
+            .output()?;
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     println!("Please save the opened place in Roblox Studio (ctrl+s).");
 
     loop {
@@ -114,7 +133,13 @@ fn generate_place_with_all_classes(path: &PathBuf, dump: &Dump) -> anyhow::Resul
             // These classes can't be put into place files by default.
             "DebuggerWatch" | "DebuggerBreakpoint" | "AdvancedDragger" | "Dragger"
             | "ScriptDebugger" | "PackageLink" | "Ad" | "AdPortal" | "AdGui"
-            | "InternalSyncItem" => continue,
+            | "InternalSyncItem" | "AuroraScript" => continue,
+
+            // Settings singletons cannot be put into a DataModel. This changed
+            // in release 653 and 657.
+            "DebugSettings" | "GameSettings" | "LuaSettings" | "NetworkSettings"
+            | "PhysicsSettings" | "RenderSettings" | "Studio" | "TaskScheduler"
+            | "UserGameSettings" => continue,
 
             // This class will cause studio to crash on close.
             "VoiceSource" => continue,
@@ -128,7 +153,8 @@ fn generate_place_with_all_classes(path: &PathBuf, dump: &Dump) -> anyhow::Resul
             | "Bone"
             | "BaseWrap"
             | "WrapLayer"
-            | "WrapTarget" => continue,
+            | "WrapTarget"
+            | "WrapDeformer" => continue,
 
             "StarterPlayer" => {
                 instance.add_child(Instance::new("StarterPlayerScripts"));
@@ -149,6 +175,7 @@ fn generate_place_with_all_classes(path: &PathBuf, dump: &Dump) -> anyhow::Resul
                 instance.add_child(Instance::new("BaseWrap"));
                 instance.add_child(Instance::new("WrapLayer"));
                 instance.add_child(Instance::new("WrapTarget"));
+                instance.add_child(Instance::new("WrapDeformer"));
             }
 
             _ => {}
@@ -241,7 +268,7 @@ impl<'a> PluginInjector<'a> {
     }
 }
 
-impl<'a> Drop for PluginInjector<'a> {
+impl Drop for PluginInjector<'_> {
     fn drop(&mut self) {
         log::info!("Uninstalling Studio plugin");
 

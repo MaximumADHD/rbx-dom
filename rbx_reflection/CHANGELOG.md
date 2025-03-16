@@ -1,6 +1,19 @@
 # rbx_reflection Changelog
 
 ## Unreleased Changes
+* Added `ReflectionDatabase::superclasses_iter`
+* Added `ReflectionDatabase::has_superclass`, like `Instance:IsA(ClassName)`
+
+## 4.7.0 (2024-08-22)
+* Update to rbx_types 1.10
+
+## 4.6.0 (2024-07-23)
+* Update to rbx_types 1.9
+* Add `superclasses` method to `ReflectionDatabase` to get a set of superclasses for a given class. ([#402])
+* Added method `ReflectionDatabase::find_default_property`, which finds the default value of a property given its name and a class that inherits it. ([#420])
+
+[#402]: https://github.com/rojo-rbx/rbx-dom/pull/402
+[#420]: https://github.com/rojo-rbx/rbx-dom/pull/420
 
 ## 4.5.0 (2024-01-16)
 * Update to rbx_types 1.8.

@@ -2,13 +2,13 @@ use thiserror::Error;
 
 use crate::Error;
 
-/// Represents any Roblox enum value.
+/// Represents any Roblox EnumItem.
 ///
 /// Roblox enums are not strongly typed, so the meaning of a value depends on
 /// where they're assigned.
 ///
 /// A list of all enums and their values are available [on the Roblox Developer
-/// Hub](https://developer.roblox.com/en-us/api-reference/enum).
+/// Hub](https://create.roblox.com/docs/reference/engine/enums).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(
     feature = "serde",
@@ -26,6 +26,26 @@ impl Enum {
 
     pub fn to_u32(self) -> u32 {
         self.value
+    }
+}
+
+/// Represents a specific Roblox EnumItem.
+///
+/// A list of all enums and their values are available [on the Roblox Developer
+/// Hub](https://create.roblox.com/docs/reference/engine/enums).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize,))]
+pub struct EnumItem {
+    #[cfg_attr(feature = "serde", serde(rename = "type"))]
+    pub ty: String,
+    pub value: u32,
+}
+
+impl From<EnumItem> for Enum {
+    fn from(enum_item: EnumItem) -> Self {
+        Self {
+            value: enum_item.value,
+        }
     }
 }
 
@@ -79,9 +99,9 @@ pub struct Vector3 {
 }
 
 fn approx_unit_or_zero(value: f32) -> Option<i32> {
-    if value.abs() <= std::f32::EPSILON {
+    if value.abs() <= f32::EPSILON {
         Some(0)
-    } else if value.abs() - 1.0 <= std::f32::EPSILON {
+    } else if value.abs() - 1.0 <= f32::EPSILON {
         Some(1.0f32.copysign(value) as i32)
     } else {
         None
@@ -409,9 +429,9 @@ impl Color3uint8 {
 impl From<Color3> for Color3uint8 {
     fn from(value: Color3) -> Self {
         Self {
-            r: ((value.r.max(0.0).min(1.0)) * 255.0).round() as u8,
-            g: ((value.g.max(0.0).min(1.0)) * 255.0).round() as u8,
-            b: ((value.b.max(0.0).min(1.0)) * 255.0).round() as u8,
+            r: (value.r.clamp(0.0, 1.0) * 255.0).round() as u8,
+            g: (value.g.clamp(0.0, 1.0) * 255.0).round() as u8,
+            b: (value.b.clamp(0.0, 1.0) * 255.0).round() as u8,
         }
     }
 }
@@ -716,6 +736,17 @@ mod serde_test {
                 z: Vector3::new(7.0, 8.0, 9.0),
             },
             "[[1.0,2.0,3.0],[4.0,5.0,6.0],[7.0,8.0,9.0]]",
+        );
+    }
+
+    #[test]
+    fn tagged_enum_json() {
+        test_ser(
+            EnumItem {
+                ty: "PlayTag".to_string(),
+                value: 3,
+            },
+            r#"{"type":"PlayTag","value":3}"#,
         );
     }
 }

@@ -15,6 +15,12 @@
             0.0
           ]
         },
+        "TestEnumItem": {
+          "EnumItem": {
+            "type": "Material",
+            "value": 256
+          }
+        },
         "TestNumber": {
           "Float64": 1337.0
         },
@@ -181,6 +187,15 @@
       "Enum": 1234
     },
     "ty": "Enum"
+  },
+  "EnumItem": {
+    "value": {
+      "EnumItem": {
+        "type": "Material",
+        "value": 256
+      }
+    },
+    "ty": "EnumItem"
   },
   "Faces": {
     "value": {
@@ -369,6 +384,41 @@
       }
     },
     "ty": "NumberSequence"
+  },
+  "OptionalCFrame-None": {
+    "value": {
+      "OptionalCFrame": null
+    },
+    "ty": "OptionalCFrame"
+  },
+  "OptionalCFrame-Some": {
+    "value": {
+      "OptionalCFrame": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "orientation": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      }
+    },
+    "ty": "OptionalCFrame"
   },
   "PhysicalProperties-Custom": {
     "value": {

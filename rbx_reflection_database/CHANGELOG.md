@@ -1,6 +1,23 @@
 # rbx\_reflection_database Changelog
 
 ## Unreleased Changes
+* Update to Roblox version 653.
+* `Model.WorldPivotData`'s default value is now `null`. ([#450])
+* `SharedString` properties now have default values. ([#458])
+* `Instance.DefinesCapabilities` is now an alias for `Instance.Sandboxed` ([#459])
+
+[#458]: https://github.com/rojo-rbx/rbx-dom/pull/458
+[#450]: https://github.com/rojo-rbx/rbx-dom/pull/450
+[#459]: https://github.com/rojo-rbx/rbx-dom/pull/459
+
+## 0.2.12+roblox-638 (2024-08-22)
+* Update to Roblox version 638.
+* `Instance.UniqueId`, `Instance.HistoryId`, and `LuaSourceContainer.ScriptGuid` are marked as `Serializes` again ([#437])
+
+[#437]: https://github.com/rojo-rbx/rbx-dom/pull/437
+
+# 0.2.11+roblox-634 (2024-07-23)
+* Updated to Roblox version 634
 
 ## 0.2.10+roblox-607 (2024-01-16)
 * Updated to Roblox version 607
@@ -14,7 +31,7 @@
 
 ## 0.2.7+roblox-588
 * Updated to Roblox version 588.
-* `Instance.UniqueId`, `Instance.HistoryId`, and `LuaSourceContainer` are now marked as `DoesNotSerialize` ([#327])
+* `Instance.UniqueId`, `Instance.HistoryId`, and `LuaSourceContainer.ScriptGuid` are now marked as `DoesNotSerialize` ([#327])
 
 [#327]: https://github.com/rojo-rbx/rbx-dom/pull/327
 

@@ -205,6 +205,19 @@ types = {
 		end,
 	},
 
+	EnumItem = {
+		fromPod = function(pod)
+			return Enum[pod.type]:FromValue(pod.value)
+		end,
+
+		toPod = function(roblox)
+			return {
+				type = tostring(roblox.EnumType),
+				value = roblox.Value,
+			}
+		end,
+	},
+
 	Faces = {
 		fromPod = function(pod)
 			local faces = {}
@@ -493,8 +506,31 @@ types = {
 	},
 }
 
+types.OptionalCFrame = {
+	fromPod = function(pod)
+		if pod == nil then
+			return nil
+		else
+			return types.CFrame.fromPod(pod)
+		end
+	end,
+
+	toPod = function(roblox)
+		if roblox == nil then
+			return nil
+		else
+			return types.CFrame.toPod(roblox)
+		end
+	end,
+}
+
 function EncodedValue.decode(encodedValue)
 	local ty, value = next(encodedValue)
+
+	if ty == nil then
+		-- If the encoded pair is empty, assume it is an unoccupied optional value
+		return true, nil
+	end
 
 	local typeImpl = types[ty]
 	if typeImpl == nil then

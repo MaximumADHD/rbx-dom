@@ -30,6 +30,24 @@ pub struct ReflectionDatabase<'a> {
     pub enums: HashMap<Cow<'a, str>, EnumDescriptor<'a>>,
 }
 
+pub struct SuperClassIter<'a> {
+    database: &'a ReflectionDatabase<'a>,
+    descriptor: Option<&'a ClassDescriptor<'a>>,
+}
+impl<'a> SuperClassIter<'a> {
+    fn next_descriptor(&self) -> Option<&'a ClassDescriptor<'a>> {
+        let superclass = self.descriptor?.superclass.as_ref()?;
+        self.database.classes.get(superclass)
+    }
+}
+impl<'a> Iterator for SuperClassIter<'a> {
+    type Item = &'a ClassDescriptor<'a>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let next_descriptor = self.next_descriptor();
+        std::mem::replace(&mut self.descriptor, next_descriptor)
+    }
+}
+
 impl<'a> ReflectionDatabase<'a> {
     /// Creates an empty `ReflectionDatabase` with a version number of 0.0.0.0.
     pub fn new() -> Self {
@@ -37,6 +55,66 @@ impl<'a> ReflectionDatabase<'a> {
             version: [0, 0, 0, 0],
             classes: HashMap::new(),
             enums: HashMap::new(),
+        }
+    }
+
+    /// Returns a list of superclasses for the provided ClassDescriptor. This
+    /// list will start with the provided class and end with `Instance`.
+    pub fn superclasses(
+        &'a self,
+        descriptor: &'a ClassDescriptor<'a>,
+    ) -> Option<Vec<&'a ClassDescriptor<'a>>> {
+        // As of the time of writing (14 March 2024), the class with the most
+        // superclasses has 6 of them.
+        let mut list = Vec::with_capacity(6);
+        let mut current_class = Some(descriptor);
+
+        while let Some(class) = current_class {
+            list.push(class);
+            current_class = class.superclass.as_ref().and_then(|s| self.classes.get(s));
+        }
+
+        Some(list)
+    }
+
+    /// Returns an iterator of superclasses for the provided ClassDescriptor. This
+    /// iterator will start with the provided class and end with `Instance`.
+    pub fn superclasses_iter(&'a self, descriptor: &'a ClassDescriptor<'a>) -> SuperClassIter<'a> {
+        SuperClassIter {
+            database: self,
+            descriptor: Some(descriptor),
+        }
+    }
+
+    /// This mimics the behavior of the Roblox method `Instance:IsA(ClassName)`.
+    /// Returns whether `superclass_descriptor` is a superclass of `descriptor`.
+    pub fn has_superclass(
+        &self,
+        descriptor: &ClassDescriptor,
+        superclass_descriptor: &ClassDescriptor,
+    ) -> bool {
+        self.superclasses_iter(descriptor)
+            .any(|class_descriptor| class_descriptor.name == superclass_descriptor.name)
+    }
+
+    /// Finds the default value of a property given its name and a class that
+    /// contains or inherits the property. Returns `Some(&Variant)` if a default
+    /// value exists, None otherwise.
+    pub fn find_default_property(
+        &'a self,
+        mut class: &'a ClassDescriptor<'a>,
+        property_name: &str,
+    ) -> Option<&'a Variant> {
+        loop {
+            match class.default_properties.get(property_name) {
+                None => {
+                    class = self
+                        .classes
+                        .get(class.superclass.as_ref()?)
+                        .expect("superclass that is Some should exist in reflection database")
+                }
+                default_value => return default_value,
+            }
         }
     }
 }
